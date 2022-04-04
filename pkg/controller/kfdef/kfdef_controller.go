@@ -2,6 +2,8 @@ package kfdef
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -32,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/kubernetes/pkg/apis/apps"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -61,6 +64,9 @@ var b2ndController = false
 
 // the manager
 var kfdefManager manager.Manager
+
+// Flag to to trigger update of alerting configuration
+var addonManagedODHParametersSecretUpdated = false
 
 // the stop channel for the 2nd controller
 var stop chan struct{}
@@ -257,6 +263,14 @@ var ownedResourcePredicates = predicate.Funcs{
 			return false
 		}
 		// TODO:  Add update log message when plugin is integrated. We need to only log events for the resources with 'configurable' label
+
+		// Set flag if the object is the addon-managed-odh-parameters secret
+		if e.ObjectNew.GetObjectKind().GroupVersionKind().Kind == "Secret" {
+			if object.GetName() == "addon-managed-odh-parameters" && object.GetNamespace() == "redhat-ods-operator" {
+				log.Infof("%v secret was updated. Enabling update of alertmanager configuration", object.GetName())
+				addonManagedODHParametersSecretUpdated = true
+			}
+		}
 		return true
 	},
 }
@@ -303,8 +317,7 @@ func (r *ReconcileKfDef) Reconcile(request reconcile.Request) (reconcile.Result,
 		return reconcile.Result{}, err
 	}
 
-	if ocmParametersUpdated(r.client, request.Name, request.Namespace) {
-
+	if addonManagedODHParametersSecretUpdated == true {
 		newUserNotificationEmails, err := getNewUserNotificationEmails(r.client)
 		if err != nil {
 			return reconcile.Result{}, fmt.Errorf("error getting secret: addon-managed-odh-parameters")
@@ -328,6 +341,14 @@ func (r *ReconcileKfDef) Reconcile(request reconcile.Request) (reconcile.Result,
 			return reconcile.Result{}, fmt.Errorf("error updating configmap: alertmanager")
 		}
 
+		alertmanagerAnnotationHash := sha256.Sum256([]byte(config.Data["alertmanager.yml"]))
+		base64AlertmanagerAnnotationHash := base64.StdEncoding.EncodeToString(alertmanagerAnnotationHash[:])
+
+		err = updateDeploymentConfigurationAnnotationHash(r.client, "prometheus", "redhat-ods-monitoring", "alertmanager", base64AlertmanagerAnnotationHash)
+		if err != nil {
+			return reconcile.Result{}, fmt.Errorf("error updating Prometheus deployment annotations")
+		}
+		addonManagedODHParametersSecretUpdated = false
 	}
 
 	deleted := instance.GetDeletionTimestamp() != nil
@@ -722,13 +743,6 @@ func removeCsv(c client.Client, r *rest.Config) error {
 	return nil
 }
 
-func ocmParametersUpdated(c client.Client, requestName string, requestNamespace string) bool {
-	if requestName == "addon-managed-odh-parameters" && requestNamespace == "redhat-ods-operator" {
-		return true
-	}
-	return false
-}
-
 func getNewUserNotificationEmails(c client.Client) (string, error) {
 
 	secret := &v1.Secret{}
@@ -756,4 +770,22 @@ func updateUserNotificationsEmails(oldAlertmanagerConfig string, newUserNotifica
 	newAlertmanagerConfig := userNotificationregex.ReplaceAllString(oldAlertmanagerConfig, emailsMatch)
 
 	return newAlertmanagerConfig
+}
+
+func updateDeploymentConfigurationAnnotationHash(c client.Client, deploymentName string, deploymentNamespace string, annotationName string, annotationHash string) error {
+
+	deployment := &apps.Deployment{}
+	deploymentParams := client.ObjectKey{
+		Namespace: deploymentNamespace,
+		Name:      deploymentName,
+	}
+
+	err := c.Get(context.TODO(), deploymentParams, deployment)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("THE ANNOTATION STRING IS: %v", deployment.Spec.Template.Annotations["alertmanager"])
+
+	return nil
 }

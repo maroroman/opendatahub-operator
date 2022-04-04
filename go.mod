@@ -27,6 +27,7 @@ require (
 	github.com/jlewi/cloud-endpoints-controller v0.0.0-20200604211613-aff0aaad5602
 	github.com/kubernetes-sigs/application v0.8.0
 	github.com/onrik/logrus v0.5.1
+	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20191115003340-16619cd27fa5
 	github.com/operator-framework/operator-sdk v1.2.0
 	github.com/otiai10/copy v1.0.2
