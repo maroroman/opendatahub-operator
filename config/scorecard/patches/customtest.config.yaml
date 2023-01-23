@@ -1,0 +1,10 @@
+- op: add
+  path: /stages/0/tests/-
+  value:
+    image: quay.io/mroman_redhat/custom-scorecard-tests:latest
+    entrypoint:
+    - custom-scorecard-tests
+    - customtest1
+    labels:
+      suite: custom
+      test: customtest1

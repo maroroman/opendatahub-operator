@@ -1201,10 +1201,10 @@ func MergeKustomizations(kfDef *kfconfig.KfConfig, compDir string, overlayParams
 // It will parse a args structure that provides mixin or multiple overlays to be merged with the base kustomization file
 // for example
 //
-//   componentParams:
-//    tf-job-operator:
-//    - name: overlay
-//      value: namespaced-gangscheduled
+//	componentParams:
+//	 tf-job-operator:
+//	 - name: overlay
+//	   value: namespaced-gangscheduled
 //
 // TODO(https://github.com/kubeflow/kubeflow/issues/3491): As part of fixing the discovery
 // logic we should change the KfDef spec to provide a list of applications (not a map).

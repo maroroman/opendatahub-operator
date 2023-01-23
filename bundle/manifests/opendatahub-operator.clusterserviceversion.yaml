@@ -4,7 +4,7 @@ metadata:
   annotations:
     alm-examples: '[]'
     capabilities: Basic Install
-    createdAt: "2023-01-10T20:14:38Z"
+    createdAt: "2023-01-20T08:07:05Z"
     operators.operatorframework.io/builder: operator-sdk-v1.26.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
   name: opendatahub-operator.v0.0.1
@@ -108,7 +108,7 @@ spec:
                 - --leader-elect
                 command:
                 - /manager
-                image: quay.io/opendatahub/opendatahub-operator:dev-1.0.1
+                image: quay.io/opendatahub/opendatahub-operator:dev-0.0.1
                 livenessProbe:
                   httpGet:
                     path: /healthz
