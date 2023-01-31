@@ -151,6 +151,14 @@ deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
+##@ Testing
+
+.PHONY: e2e-test
+e2e-test: image deploy
+	go test ./e2e/ -run ^TestE2EBundle -v --namespace=${K8S_NAMESPACE} ${E2E_TEST_FLAGS}
+
+## The test should undeploy by itself after it finishes
+
 ##@ Build Dependencies
 
 ## Location to install dependencies to
