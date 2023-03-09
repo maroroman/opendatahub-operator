@@ -16,7 +16,7 @@ jobs:
       - name: Gather files
         shell: bash
         run: |
-          cd ${{GITHUB_WORKSPACE}}/config/crd/dashboard-crds
+          cd ${{ env.GITHUB_WORKSPACE }}/config/crd/dashboard-crds
           svn checkout --force https://github.com/opendatahub-io/odh-dashboard/branches/main/manifests/crd
           svn revert -R ./crd
       - name: Create Pull Request
