@@ -3,7 +3,7 @@ name: Sync Dashboard CRDs
 
 # Await dispatch from dashboard repo that crds have been modified
 on:
-  repository_dispatch
+  workflow_dispatch
 
 jobs:
   dashboard-sync:
